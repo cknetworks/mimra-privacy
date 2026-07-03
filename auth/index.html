@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mimra — Confirm Email</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6; max-width: 520px; margin: 0 auto; padding: 64px 24px;
+    color: #1a1a1a; background: #fff; text-align: center;
+  }
+  @media (prefers-color-scheme: dark) { body { color: #e6e6e6; background: #121212; } }
+  .icon { font-size: 3.2rem; line-height: 1; margin-bottom: .3em; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3em; }
+  p { margin: .4em 0; }
+  .btn {
+    display: inline-block; margin-top: 1.4em; padding: 14px 30px; border-radius: 12px;
+    background: #6c5ce7; color: #fff; text-decoration: none; font-weight: 600; font-size: 1.05rem;
+  }
+  .muted { color: #888; font-size: .9rem; margin-top: 2em; }
+</style>
+</head>
+<body>
+  <div class="icon" id="icon">✓</div>
+  <h1 id="title">Email confirmed</h1>
+  <p id="msg">Open Mimra on your phone to finish signing in.</p>
+  <a class="btn" id="openBtn" href="#">Open Mimra</a>
+  <p class="muted" id="hint">On a computer? Your email is already confirmed &mdash; just open the Mimra app on your phone and sign in.</p>
+
+<script>
+(function () {
+  var hash = window.location.hash || '';
+  var raw = (hash.replace(/^#/, '') + '&' + window.location.search.replace(/^\?/, ''));
+  var params = {};
+  raw.split('&').forEach(function (pair) {
+    if (!pair) return;
+    var i = pair.indexOf('=');
+    var k = i >= 0 ? pair.slice(0, i) : pair;
+    var v = i >= 0 ? pair.slice(i + 1) : '';
+    try { params[decodeURIComponent(k)] = decodeURIComponent(v.replace(/\+/g, ' ')); }
+    catch (e) { params[k] = v; }
+  });
+
+  var isRecovery = params.type === 'recovery';
+  var hasError = ('error' in params) || ('error_description' in params);
+  var scheme = isRecovery ? 'language-app://reset-password' : 'language-app://auth-confirmed';
+  var deepLink = scheme + hash;
+
+  var icon = document.getElementById('icon');
+  var title = document.getElementById('title');
+  var msg = document.getElementById('msg');
+  var btn = document.getElementById('openBtn');
+  var hint = document.getElementById('hint');
+
+  if (hasError) {
+    icon.textContent = '⚠';
+    title.textContent = 'Link expired';
+    msg.textContent = (params.error_description || 'This link is no longer valid.')
+      + ' Please request a new one from the app.';
+    btn.style.display = 'none';
+    hint.style.display = 'none';
+    return;
+  }
+
+  if (isRecovery) {
+    icon.textContent = '🔑';
+    title.textContent = 'Reset your password';
+    msg.textContent = 'Open Mimra on your phone to set a new password.';
+    hint.textContent = 'On a computer? Open the Mimra app on your phone to reset your password.';
+  }
+
+  btn.setAttribute('href', deepLink);
+  // Auto-attempt to hand off to the app. Works on a device with Mimra installed;
+  // does nothing on desktop (where the confirmation has already succeeded server-side).
+  setTimeout(function () { window.location.href = deepLink; }, 400);
+})();
+</script>
+</body>
+</html>
